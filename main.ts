@@ -39,14 +39,8 @@ enum RBLineSensor
   */
 enum RBModel
 {
-    //% block="Mk1"
-    Mk1,
-    //% block="Mk2"
-    Mk2, 
-    //% block="Mk2/LedBar"
-    Mk2A, 
-    //% block="Mk3"
-    Mk3
+    //% block="v1"
+    v1
 }
 
 /**
@@ -55,11 +49,7 @@ enum RBModel
 enum RBPingUnit
 {
     //% block="cm"
-    Centimeters,
-    //% block="inches"
-    Inches,
-    //% block="μs"
-    MicroSeconds
+    Centimeters
 }
 
 /**
@@ -93,10 +83,9 @@ enum RBColors
  * Custom blocks
  */
 /** //% weight=10 color=#0fbc11 icon="\uf1ba" */
-//% weight=10 color=#e7660b icon="\uf1ba"
-namespace robobit
+//% weight=10 color=#e7660b icon="\uf1ba" block="CoRo Car"
+namespace corocar
 {
-    let ledBar: neopixel.Strip;
     let _model: RBModel;
     let larsson: number;
     let scandir: number;
@@ -111,9 +100,9 @@ namespace robobit
     /**
       * Select Model of Robobit (Determines Pins used)
       *
-      * @param model Model of Robobit buggy. Mk1, Mk2, or Mk3
+      * @param model Model of Robobit buggy. v1
       */
-    //% blockId="robobit_model" block="select Robobit model %model"
+    //% blockId="robobit_model" block="select CoRo Car model %model"
     //% weight=110
     export function select_model(model: RBModel): void
     {
@@ -212,7 +201,6 @@ namespace robobit
             leftSpeed = absSpeed;
         if ((motor == RBMotor.Right) || (motor == RBMotor.Both))
             rightSpeed = absSpeed;
-        setPWM();
         if (speed > 1023)
         {
             speed = 1023;
@@ -236,13 +224,16 @@ namespace robobit
         }
         if ((motor == RBMotor.Left) || (motor == RBMotor.Both))
         {
-            pins.analogWritePin(AnalogPin.P0, realSpeed);
-            pins.digitalWritePin(DigitalPin.P8, forward ? 0 : 1);
+            pins.analogWritePin(AnalogPin.P1, realSpeed);
+            pins.digitalWritePin(DigitalPin.P12, forward ? 0 : 1);
+	    pins.digitalWritePin(DigitalPin.P13, forward ? 1 : 0);
+		
         }
         if ((motor == RBMotor.Right) || (motor == RBMotor.Both))
         {
-            pins.analogWritePin(AnalogPin.P1, realSpeed);
-            pins.digitalWritePin(DigitalPin.P12, forward ? 0 : 1);
+            pins.analogWritePin(AnalogPin.P2, realSpeed);
+            pins.digitalWritePin(DigitalPin.P16, forward ? 0 : 1);
+	    pins.digitalWritePin(DigitalPin.P15, forward ? 1 : 0);
         }
     }
 
@@ -259,17 +250,11 @@ namespace robobit
     {
         if (sensor == RBLineSensor.Left)
 	{
-	    if (_model == RBModel.Mk3)
-            	return pins.digitalReadPin(DigitalPin.P16);
-	    else
-            	return pins.digitalReadPin(DigitalPin.P11);
+            	return pins.analogReadPin(AnalogPin.P3);
         }
         else
 	{
-	    if (_model == RBModel.Mk3)
-            	return pins.digitalReadPin(DigitalPin.P14);
-	    else
-            	return pins.digitalReadPin(DigitalPin.P5);
+            	return pins.analogReadPin(AnalogPin.P4);   
         }
     }
 
@@ -286,12 +271,8 @@ namespace robobit
     export function sonar(unit: RBPingUnit): number
     {
         // send pulse
-        let trig = DigitalPin.P13;
-	if (_model == RBModel.Mk3)
-	    trig = DigitalPin.P15;
-	if (_model == RBModel.Mk2A)
-	    trig = DigitalPin.P15;
-        let echo = trig;
+        let trig = DigitalPin.P0;
+        let echo = DigitalPin.P8;
         let maxCmDistance = 500;
         let d=10;
         pins.setPull(trig, PinPullMode.PullNone);
@@ -307,25 +288,13 @@ namespace robobit
             if (d>0)
                 break;
         }
-        switch (unit)
-        {
-            case RBPingUnit.Centimeters: Math.round(return d / 58);
-            case RBPingUnit.Inches: Math.round(return d / 148);
-            default: return d;
-        }
-    }
-
-    /**
-      * Adjust opening of Claw attachment
-      * @param degrees Degrees to open Claw. eg: 30
-      */
-    //% subcategory=Sensors
-    //% group=Sensors
-    //% blockId="robobit_set_claw" block="Set claw %degrees"
-    //% weight=70
-    export function setClaw(degrees: number): void
-    {
-        pins.servoWritePin(AnalogPin.P13, Math.clamp(0, 80, degrees))
+        /** switch (unit)
+        *{
+            *case RBPingUnit.Centimeters: Math.round(return d / 58);
+            *case RBPingUnit.Inches: Math.round(return d / 148);
+            *default: return d;
+        }*/
+        return Math.round(d/58);
     }
 
     function setPWM(): void
@@ -336,234 +305,5 @@ namespace robobit
             pins.analogSetPeriod(AnalogPin.P0, 40000);
         else
             pins.analogSetPeriod(AnalogPin.P0, 30000);
-    }
-
-    function neo(): neopixel.Strip
-    {
-        if (!ledBar)
-        {
-            ledBar = neopixel.create(DigitalPin.P13, 8, NeoPixelMode.RGB);
-            ledBar.setBrightness(40);
-        }
-        return ledBar;
-    }
-
-    /**
-      * Sets all pixels to a given colour
-      *
-      * @param rgb RGB colour of the pixel
-      */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="cubebit_set_color" block="set all pixels to %rgb=rb_colours"
-    //% weight=90
-    export function setColor(rgb: number): void
-    {
-        neo().showColor(rgb);
-    }
-
-    /**
-     * Set a pixel to a given colour (using colour names).
-     *
-     * @param ID location of the pixel in the cube from 0
-     * @param rgb RGB color of the LED
-     */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_set_pixel_color" block="set pixel color at %ID|to %rgb=rb_colours"
-    //% weight=85
-    export function setPixel(ID: number, rgb: number): void
-    {
-        neo().setPixelColor(ID, rgb);
-    }
-
-    /**
-     * Convert from RGB values to colour number
-     *
-     * @param red Red value of the LED 0:255
-     * @param green Green value of the LED 0:255
-     * @param blue Blue value of the LED 0:255
-     */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_convertRGB" block="convert from red %red| green %green| blue %bblue"
-    //% weight=55
-    export function convertRGB(r: number, g: number, b: number): number
-    {
-        return ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
-    }
-
-    /**
-      * Show pixels
-      */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_show" block="show Led Bar changes"
-    //% weight=95
-    export function neoShow(): void
-    {
-        neo().show();
-    }
-
-    /**
-      * Clear leds.
-      */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_clear" block="clear all pixels"
-    //% weight=80
-    export function neoClear(): void
-    {
-        neo().clear();
-    }
-
-    /**
-      * Shows a rainbow pattern on all pixels
-      */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_rainbow" block="set Led Bar rainbow"
-    //% weight=75
-    export function neoRainbow(): void
-    {
-        neo().showRainbow(1, 360);
-    }
-
-    /**
-     * Shift LEDs forward and clear with zeros.
-     */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_shift" block="shift pixels"
-    //% weight=65
-    export function neoShift(): void
-    {
-        neo().shift(1);
-    }
-
-    /**
-     * Rotate LEDs forward.
-     */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_rotate" block="rotate pixels"
-    //% weight=70
-    export function neoRotate(): void
-    {
-        neo().rotate(1);
-    }
-
-    /**
-     * Set the brightness of the Led Bar. Note this only applies to future writes to the strip.
-     * @param brightness a measure of LED brightness in 0-255. eg: 40
-     */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_brightness" block="set Led Bar brightness %brightness"
-    //% brightness.min=0 brightness.max=255
-    //% weight=92
-    export function neoBrightness(brightness: number): void
-    {
-        neo().setBrightness(brightness);
-    }
-
-    /**
-      * Gets numeric value of colour
-      *
-      * @param color Standard RGB Led Colours
-      */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="rb_colours" block=%color
-    //% weight=60
-    export function RBColours(color: RBColors): number
-    {
-        return color;
-    }
-
-    /**
-      * Start Scanner
-      * @param color the colour to use for scanning
-      * @param delay time in ms between scan steps, eg: 100,50,200,500
-      */
-    //% blockId="rb_startScanner" block="start scan %color=rb_colours| with %delay|(ms)"
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% delay.min=1 delay.max=10000
-    //% weight=78
-    export function startScanner(color: number, delay: number): void
-    {
-        scanColor1 = color;
-        scanColor2 = reduce(scanColor1, 8);
-        scanColor3 = reduce(scanColor2, 4);
-        if(_scanning == false)
-        {
-            _scanning = true;
-            control.inBackground(() =>
-            {
-                while (_scanning)
-                {                                
-                    ledScan();
-                    neoShow();
-                    basic.pause(delay);
-                }
-            })
-        }
-    }
-
-    /**
-      * Reduce colour RGB separately by divisor
-      */
-    function reduce(color: number, reducer: number): number
-    {
-        let red = ((color & 0xff0000) / reducer) & 0xff0000;
-        let green = ((color & 0x00ff00) / reducer) & 0x00ff00;
-        let blue = ((color & 0x0000ff) / reducer) & 0x0000ff;
-        return red + green + blue;
-    }
-
-    /**
-      * Stop Scanner
-      */
-    //% block
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% weight=76
-    export function stopScanner(): void
-    {
-        _scanning = false;
-    }
-
-    /**
-     * Use centre 6 LEDs as Larsson Scanner. Each call moves the scan by one pixel
-     */
-    //% subcategory=LedBar
-    //% group=LedBar
-    //% blockId="robobit_ledScan" block="scan centre pixels"
-    //% weight=50
-    //% deprecated=true
-    export function ledScan(): void
-    {
-        if (!larsson)
-        {
-            larsson = 1;
-            scandir = 1;
-        }
-        larsson += scandir;
-        if (larsson >= (ledCount - 2))
-            scandir = -1;
-        else if (larsson <= 1)
-            scandir = 1;
-        for (let x = 1; x < (ledCount-1); x++)
-        {
-            if ((x == (larsson - 2)) || (x == (larsson + 2)))
-                setPixel(x, scanColor3);
-            else if ((x == (larsson - 1)) || (x == (larsson + 1)))
-                setPixel(x, scanColor2);
-            else if (x == larsson)
-                setPixel(x, scanColor1);
-            else
-                setPixel(x, 0);
-        }
     }
 }
