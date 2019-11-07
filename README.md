@@ -34,7 +34,7 @@ basic.pause(250)
 corocar.driveTurn(BBRobotDirection.Right, 1023)
 basic.pause(250)
 
-robobit.drive(0)
+corocar.drive(0)
 ```
 
 ## Driving the motor
@@ -60,12 +60,12 @@ basic.pause(1000);
 ## Read line sensor
 
 The corocar (optionally) has two line-sensors: left and right. To read the value of the
-sensors, use `robobit.readLine(..)` function.
+sensors, use `corocar.readLine(..)` function.
 
 ```blocks
 // Read left and right line sensor
-let left = robobit.readLine(BBLineSensor.Left);
-let right = robobit.readLine(BBLineSensor.Right);
+let left = corocar.readLine(BBLineSensor.Left);
+let right = corocar.readLine(BBLineSensor.Right);
 ```
 
 ## Read sonar value
